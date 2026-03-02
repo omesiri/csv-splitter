@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSVsplit — Split CSV files instantly</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:           #0a0c10;
+      --surface:      #111318;
+      --surface-2:    #171a22;
+      --border:       #1d2030;
+      --border-hi:    #2c3250;
+      --text:         #e4e6ee;
+      --text-muted:   #5a6070;
+      --text-dim:     #8890a8;
+      --accent:       #b8ff00;
+      --accent-glow:  rgba(184, 255, 0, 0.15);
+      --accent-dim:   rgba(184, 255, 0, 0.08);
+      --error:        #ff5252;
+      --error-bg:     rgba(255, 82, 82, 0.08);
+      --error-border: rgba(255, 82, 82, 0.25);
+      --mono: 'JetBrains Mono', 'Courier New', monospace;
+      --sans: 'DM Sans', system-ui, sans-serif;
+      --display: 'Syne', system-ui, sans-serif;
+      --radius: 10px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      /* Subtle noise grain */
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(184,255,0,0.04) 0%, transparent 60%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    }
+
+    /* ─── Header ─────────────────────────────────────── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 18px 40px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: rgba(10, 12, 16, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 100;
+    }
+
+    .logo-mark {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-family: var(--display);
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+
+    .logo-text em {
+      font-style: normal;
+      color: var(--accent);
+    }
+
+    .header-tag {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 3px 8px;
+      letter-spacing: 0.05em;
+    }
+
+    /* ─── Main layout ────────────────────────────────── */
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 52px 40px 80px;
+    }
+
+    /* ─── Hero ───────────────────────────────────────── */
+    .hero {
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-family: var(--display);
+      font-size: clamp(38px, 6vw, 58px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.02;
+      margin-bottom: 14px;
+    }
+
+    h1 .hi {
+      color: var(--accent);
+      position: relative;
+      display: inline-block;
+    }
+
+    .hero-sub {
+      font-size: 15px;
+      color: var(--text-dim);
+      font-weight: 300;
+      max-width: 380px;
+    }
+
+    /* ─── Upload zone ────────────────────────────────── */
+    #upload-zone {
+      border: 1.5px dashed var(--border-hi);
+      border-radius: var(--radius);
+      padding: 52px 40px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      background: var(--surface);
+      transition: border-color 0.2s ease, background 0.2s ease;
+      user-select: none;
+    }
+
+    #upload-zone::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 110%, var(--accent-glow) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    #upload-zone:hover,
+    #upload-zone.drag-active {
+      border-color: var(--accent);
+      background: var(--surface-2);
+    }
+
+    #upload-zone:hover::after,
+    #upload-zone.drag-active::after {
+      opacity: 1;
+    }
+
+    .upload-icon-wrap {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 18px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(184,255,0,0.18);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    #upload-zone:hover .upload-icon-wrap,
+    #upload-zone.drag-active .upload-icon-wrap {
+      background: rgba(184,255,0,0.15);
+      border-color: rgba(184,255,0,0.4);
+    }
+
+    .upload-icon-wrap svg {
+      color: var(--accent);
+    }
+
+    .upload-title {
+      font-family: var(--display);
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .upload-hint {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
+
+    .upload-hint em {
+      font-style: normal;
+      color: var(--accent);
+    }
+
+    #file-input { display: none; }
+
+    /* ─── Config panel ───────────────────────────────── */
+    #config-panel {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .file-strip {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+
+    .csv-badge {
+      background: var(--accent-dim);
+      border: 1px solid rgba(184,255,0,0.22);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      flex-shrink: 0;
+    }
+
+    .file-details { flex: 1; min-width: 0; }
+
+    .file-name-text {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-stat {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .file-stat strong {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .config-body {
+      padding: 18px 20px 20px;
+    }
+
+    .config-label-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .config-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .config-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    #chunk-input {
+      flex: 1;
+      max-width: 200px;
+      background: var(--bg);
+      border: 1px solid var(--border-hi);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 16px;
+      font-weight: 500;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      -moz-appearance: textfield;
+    }
+
+    #chunk-input::-webkit-outer-spin-button,
+    #chunk-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    #chunk-input::placeholder { color: var(--text-muted); }
+
+    #chunk-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    #split-btn {
+      background: var(--accent);
+      color: #080a0d;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 22px;
+      font-family: var(--display);
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      transition: background 0.12s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    #split-btn:hover { background: #c8ff1a; }
+    #split-btn:active { transform: scale(0.97); }
+
+    /* ─── Error message ──────────────────────────────── */
+    #error-msg {
+      display: none;
+      margin-top: 10px;
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+      border-radius: 7px;
+      padding: 9px 13px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--error);
+    }
+
+    /* ─── Results ────────────────────────────────────── */
+    #results-section { display: none; }
+
+    .results-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin: 28px 0 14px;
+    }
+
+    .results-title {
+      font-family: var(--display);
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .results-count {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .results-count strong {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    #results-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .result-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 12px 16px;
+      transition: border-color 0.15s, background 0.15s;
+      animation: slideUp 0.22s ease both;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-item:hover {
+      border-color: var(--border-hi);
+      background: var(--surface-2);
+    }
+
+    .result-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .part-tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 8px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .part-info {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .part-info strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .dl-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: transparent;
+      border: 1px solid var(--border-hi);
+      border-radius: 6px;
+      padding: 6px 12px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .dl-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .dl-btn svg {
+      width: 11px;
+      height: 11px;
+      flex-shrink: 0;
+    }
+
+    /* ─── Reset ──────────────────────────────────────── */
+    .reset-row {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    #reset-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: var(--border-hi);
+      transition: color 0.15s;
+    }
+
+    #reset-btn:hover { color: var(--text); }
+
+    /* ─── Responsive ─────────────────────────────────── */
+    @media (max-width: 600px) {
+      header { padding: 14px 20px; }
+      main { padding: 36px 20px 60px; }
+      #upload-zone { padding: 40px 24px; }
+      .config-controls { flex-wrap: wrap; }
+      #chunk-input { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-mark" aria-hidden="true">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <rect x="1" y="3" width="12" height="1.8" rx="0.9" fill="#080a0d"/>
+        <rect x="1" y="6.1" width="12" height="1.8" rx="0.9" fill="#080a0d"/>
+        <rect x="1" y="9.2" width="12" height="1.8" rx="0.9" fill="#080a0d"/>
+      </svg>
+    </div>
+    <div class="logo-text">CSV<em>split</em></div>
+    <div class="header-tag">BROWSER-ONLY · PRIVATE</div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <h1>Split CSV<br>files <span class="hi">instantly.</span></h1>
+      <p class="hero-sub">Upload any CSV, set a row limit, and download your split parts. Nothing leaves your browser.</p>
+    </div>
+
+    <!-- Upload -->
+    <div id="upload-zone" role="button" tabindex="0" aria-label="Upload CSV file">
+      <input type="file" id="file-input" accept=".csv" aria-hidden="true">
+      <div class="upload-icon-wrap">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 15V3M8 7l4-4 4 4"/>
+          <path d="M20 15v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4"/>
+        </svg>
+      </div>
+      <div class="upload-title">Drop your CSV file here</div>
+      <div class="upload-hint">or <em>click to browse</em> &nbsp;·&nbsp; .csv only</div>
+    </div>
+
+    <!-- Configure -->
+    <div id="config-panel" aria-live="polite">
+      <div class="file-strip">
+        <span class="csv-badge">CSV</span>
+        <div class="file-details">
+          <div class="file-name-text" id="display-filename">—</div>
+          <div class="file-stat"><strong id="display-rowcount">0</strong> data rows detected</div>
+        </div>
+      </div>
+      <div class="config-body">
+        <div class="config-label-row">
+          <span class="config-label">Rows per part</span>
+        </div>
+        <div class="config-controls">
+          <input
+            type="number"
+            id="chunk-input"
+            placeholder="e.g. 2000"
+            min="1"
+            aria-label="Number of rows per split file"
+          >
+          <button id="split-btn">Split CSV</button>
+        </div>
+        <div id="error-msg" role="alert"></div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results-section" aria-live="polite">
+      <div class="results-header">
+        <div class="results-title">Ready to download</div>
+        <div class="results-count"><strong id="display-parts">0</strong> parts</div>
+      </div>
+      <div id="results-list"></div>
+      <div class="reset-row">
+        <button id="reset-btn">Upload another file</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script>
+    'use strict';
+
+    /* ─── State ────────────────────────────────────────── */
+    let allRows = [];
+    let originalFilename = '';
+    let splitParts = [];
+
+    /* ─── DOM refs ─────────────────────────────────────── */
+    const uploadZone     = document.getElementById('upload-zone');
+    const fileInput      = document.getElementById('file-input');
+    const configPanel    = document.getElementById('config-panel');
+    const chunkInput     = document.getElementById('chunk-input');
+    const splitBtn       = document.getElementById('split-btn');
+    const errorMsg       = document.getElementById('error-msg');
+    const resultsSection = document.getElementById('results-section');
+    const resultsList    = document.getElementById('results-list');
+    const displayFilename = document.getElementById('display-filename');
+    const displayRowcount = document.getElementById('display-rowcount');
+    const displayParts   = document.getElementById('display-parts');
+    const resetBtn       = document.getElementById('reset-btn');
+
+    /* ─── Upload zone ──────────────────────────────────── */
+    uploadZone.addEventListener('click', () => fileInput.click());
+
+    uploadZone.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+    });
+
+    uploadZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      uploadZone.classList.add('drag-active');
+    });
+
+    uploadZone.addEventListener('dragleave', e => {
+      if (!uploadZone.contains(e.relatedTarget)) {
+        uploadZone.classList.remove('drag-active');
+      }
+    });
+
+    uploadZone.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadZone.classList.remove('drag-active');
+      handleFile(e.dataTransfer.files[0]);
+    });
+
+    fileInput.addEventListener('change', e => {
+      handleFile(e.target.files[0]);
+      fileInput.value = '';
+    });
+
+    /* ─── Parse ────────────────────────────────────────── */
+    function handleFile(file) {
+      if (!file) return;
+
+      if (!file.name.toLowerCase().endsWith('.csv')) {
+        showError('Please upload a .csv file.');
+        return;
+      }
+
+      Papa.parse(file, {
+        header: false,
+        skipEmptyLines: true,
+        complete: function (result) {
+          const data = result.data;
+
+          if (data.length < 2) {
+            showError('This file has no data rows (or only a header row).');
+            return;
+          }
+
+          allRows = data;
+          originalFilename = file.name.replace(/\.csv$/i, '');
+          showConfig(data.length - 1);
+        },
+        error: function () {
+          showError('Could not read this file. Please check it is a valid CSV.');
+        }
+      });
+    }
+
+    function showConfig(rowCount) {
+      uploadZone.style.display = 'none';
+      resultsSection.style.display = 'none';
+      resultsList.textContent = '';
+      splitParts = [];
+      clearError();
+
+      displayFilename.textContent = originalFilename + '.csv';
+      displayRowcount.textContent = rowCount.toLocaleString();
+
+      configPanel.style.display = 'block';
+      chunkInput.value = '';
+      chunkInput.focus();
+    }
+
+    /* ─── Split ────────────────────────────────────────── */
+    splitBtn.addEventListener('click', runSplit);
+
+    chunkInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') runSplit();
+    });
+
+    function runSplit() {
+      const raw = chunkInput.value.trim();
+      const chunkSize = parseInt(raw, 10);
+
+      if (!raw || isNaN(chunkSize) || chunkSize < 1) {
+        showError('Enter a whole number greater than 0.');
+        return;
+      }
+
+      clearError();
+
+      const header   = allRows[0];
+      const dataRows = allRows.slice(1);
+      splitParts = [];
+
+      for (let i = 0; i < dataRows.length; i += chunkSize) {
+        splitParts.push([header].concat(dataRows.slice(i, i + chunkSize)));
+      }
+
+      renderResults();
+    }
+
+    /* ─── Render results ───────────────────────────────── */
+    function renderResults() {
+      resultsList.textContent = '';
+      displayParts.textContent = splitParts.length.toLocaleString();
+
+      splitParts.forEach(function (rows, i) {
+        const partNum     = i + 1;
+        const dataRowCount = rows.length - 1;
+        const delay       = Math.min(i * 35, 400);
+
+        /* wrapper */
+        const item = document.createElement('div');
+        item.className = 'result-item';
+        item.style.animationDelay = delay + 'ms';
+
+        /* left side */
+        const left = document.createElement('div');
+        left.className = 'result-left';
+
+        const tag = document.createElement('span');
+        tag.className = 'part-tag';
+        tag.textContent = 'PART ' + partNum;
+
+        const info = document.createElement('span');
+        info.className = 'part-info';
+
+        const strong = document.createElement('strong');
+        strong.textContent = dataRowCount.toLocaleString();
+
+        info.appendChild(strong);
+        info.append(' rows  ·  ' + originalFilename + '_part_' + partNum + '.csv');
+
+        left.appendChild(tag);
+        left.appendChild(info);
+
+        /* download button */
+        const btn = document.createElement('button');
+        btn.className = 'dl-btn';
+        btn.setAttribute('aria-label', 'Download part ' + partNum);
+
+        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        icon.setAttribute('viewBox', '0 0 11 11');
+        icon.setAttribute('fill', 'none');
+        icon.setAttribute('stroke', 'currentColor');
+        icon.setAttribute('stroke-width', '1.6');
+        icon.setAttribute('stroke-linecap', 'round');
+        icon.setAttribute('stroke-linejoin', 'round');
+        icon.setAttribute('aria-hidden', 'true');
+
+        const p1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        p1.setAttribute('d', 'M5.5 1v7M2.5 5.5l3 3 3-3');
+
+        const p2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        p2.setAttribute('d', 'M1 9.5h9');
+
+        icon.appendChild(p1);
+        icon.appendChild(p2);
+
+        const btnText = document.createTextNode(' Download');
+        btn.appendChild(icon);
+        btn.appendChild(btnText);
+
+        btn.addEventListener('click', (function (capturedRows, capturedNum) {
+          return function () { downloadPart(capturedRows, capturedNum); };
+        })(rows, partNum));
+
+        item.appendChild(left);
+        item.appendChild(btn);
+        resultsList.appendChild(item);
+      });
+
+      resultsSection.style.display = 'block';
+    }
+
+    /* ─── Download ─────────────────────────────────────── */
+    function downloadPart(rows, partNum) {
+      const csv  = Papa.unparse(rows);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = originalFilename + '_part_' + partNum + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 100);
+    }
+
+    /* ─── Error ────────────────────────────────────────── */
+    let errorTimer = null;
+
+    function showError(msg) {
+      clearTimeout(errorTimer);
+      errorMsg.textContent = msg;
+      errorMsg.style.display = 'block';
+      errorTimer = setTimeout(clearError, 5000);
+    }
+
+    function clearError() {
+      clearTimeout(errorTimer);
+      errorMsg.style.display = 'none';
+      errorMsg.textContent = '';
+    }
+
+    /* ─── Reset ────────────────────────────────────────── */
+    resetBtn.addEventListener('click', function () {
+      allRows = [];
+      originalFilename = '';
+      splitParts = [];
+      configPanel.style.display = 'none';
+      resultsSection.style.display = 'none';
+      resultsList.textContent = '';
+      chunkInput.value = '';
+      clearError();
+      uploadZone.style.display = 'block';
+    });
+  </script>
+</body>
+</html>
