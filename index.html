@@ -347,6 +347,31 @@
       box-shadow: 0 0 0 3px var(--accent-dim);
     }
 
+    .filename-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border-hi);
+      border-radius: 8px;
+      padding: 9px 14px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .filename-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    .filename-suffix {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 5px;
+    }
+
     .action-btn {
       background: var(--accent);
       color: #080a0d;
@@ -873,6 +898,16 @@
         </div>
         <div class="config-body">
           <div class="config-label-row">
+            <span class="config-label">Base filename</span>
+          </div>
+          <input
+            type="text"
+            id="split-filename-input"
+            class="filename-input"
+            aria-label="Base filename for split files"
+          >
+          <div class="filename-suffix" id="split-filename-suffix"></div>
+          <div class="config-label-row" style="margin-top:14px;">
             <span class="config-label">Rows per part</span>
           </div>
           <div class="config-controls">
@@ -945,18 +980,26 @@
           <div class="results-title">Merged file ready</div>
         </div>
         <div class="merge-result-card">
-          <div class="merge-result-inner">
-            <div class="merge-result-info">
-              <div class="merge-result-label" id="merge-result-filename">merged.csv</div>
-              <div class="merge-result-stats" id="merge-result-stats">—</div>
-            </div>
-            <button id="merge-download-btn" class="dl-btn">
+          <div class="merge-result-inner" style="flex-direction:column; align-items:stretch; gap:12px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+              <div class="merge-result-info">
+                <div class="merge-result-stats" id="merge-result-stats">—</div>
+              </div>
+              <button id="merge-download-btn" class="dl-btn">
               <svg viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M5.5 1v7M2.5 5.5l3 3 3-3"/>
                 <path d="M1 9.5h9"/>
               </svg>
               Download
             </button>
+            </div>
+            <input
+              type="text"
+              id="merge-filename-input"
+              class="filename-input"
+              aria-label="Filename for merged file"
+              placeholder="merged"
+            >
           </div>
         </div>
         <!-- Dedup -->
@@ -1024,8 +1067,10 @@
     const resultsList    = document.getElementById('results-list');
     const displayFilename = document.getElementById('display-filename');
     const displayRowcount = document.getElementById('display-rowcount');
-    const displayParts   = document.getElementById('display-parts');
-    const resetBtn       = document.getElementById('reset-btn');
+    const displayParts        = document.getElementById('display-parts');
+    const resetBtn            = document.getElementById('reset-btn');
+    const splitFilenameInput  = document.getElementById('split-filename-input');
+    const splitFilenameSuffix = document.getElementById('split-filename-suffix');
 
     uploadZone.addEventListener('click', () => fileInput.click());
     uploadZone.addEventListener('keydown', e => {
@@ -1083,8 +1128,15 @@
       displayRowcount.textContent = rowCount.toLocaleString();
       configPanel.style.display = 'block';
       chunkInput.value = '';
+      splitFilenameInput.value = originalFilename;
+      splitFilenameSuffix.textContent = 'e.g. ' + originalFilename + '_part_1.csv';
       chunkInput.focus();
     }
+
+    splitFilenameInput.addEventListener('input', function () {
+      const base = splitFilenameInput.value.trim() || originalFilename;
+      splitFilenameSuffix.textContent = 'e.g. ' + base + '_part_1.csv';
+    });
 
     splitBtn.addEventListener('click', runSplit);
     chunkInput.addEventListener('keydown', e => { if (e.key === 'Enter') runSplit(); });
@@ -1097,6 +1149,7 @@
         return;
       }
       clearSplitError();
+      originalFilename = splitFilenameInput.value.trim() || originalFilename;
       const header   = allRows[0];
       const dataRows = allRows.slice(1);
       splitParts = [];
@@ -1190,9 +1243,10 @@
     const mergeResult      = document.getElementById('merge-result');
     const mergeResultFilename = document.getElementById('merge-result-filename');
     const mergeResultStats = document.getElementById('merge-result-stats');
-    const mergeDownloadBtn = document.getElementById('merge-download-btn');
-    const mergeResetBtn    = document.getElementById('merge-reset-btn');
-    const dedupSelect      = document.getElementById('dedup-select');
+    const mergeDownloadBtn   = document.getElementById('merge-download-btn');
+    const mergeResetBtn      = document.getElementById('merge-reset-btn');
+    const mergeFilenameInput = document.getElementById('merge-filename-input');
+    const dedupSelect        = document.getElementById('dedup-select');
     const dedupApplyBtn    = document.getElementById('dedup-apply-btn');
     const dedupResult      = document.getElementById('dedup-result');
 
@@ -1386,6 +1440,8 @@
         '<strong>' + unionHeaders.length + '</strong> columns &nbsp;·&nbsp; ' +
         '<strong>' + mergeFiles.length + '</strong> files merged';
 
+      mergeFilenameInput.value = mergedFilename.replace(/\.csv$/i, '');
+
       /* populate dedup column picker */
       dedupSelect.innerHTML = '<option value="">— choose a column —</option>';
       unionHeaders.forEach(function (h) {
@@ -1402,7 +1458,9 @@
     }
 
     mergeDownloadBtn.addEventListener('click', function () {
-      if (mergedBlob) downloadBlob(null, mergedFilename, mergedBlob);
+      if (!mergedBlob) return;
+      const name = (mergeFilenameInput.value.trim() || 'merged').replace(/\.csv$/i, '') + '.csv';
+      downloadBlob(null, name, mergedBlob);
     });
 
     dedupApplyBtn.addEventListener('click', function () {
@@ -1450,6 +1508,7 @@
       mergedRows = [];
       mergedBlob = null;
       mergeFileList.textContent = '';
+      mergeFilenameInput.value = '';
       mergePanel.style.display = 'none';
       mergeResult.style.display = 'none';
       clearMergeError();
