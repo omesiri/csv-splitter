@@ -706,6 +706,109 @@
       font-weight: 500;
     }
 
+    /* ─── Dedup panel ────────────────────────────────── */
+    .dedup-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .dedup-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+
+    .dedup-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      flex: 1;
+    }
+
+    .dedup-optional {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 7px;
+      letter-spacing: 0.04em;
+    }
+
+    .dedup-body {
+      padding: 14px 16px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .dedup-select {
+      flex: 1;
+      min-width: 160px;
+      background: var(--bg);
+      border: 1px solid var(--border-hi);
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%235a6070' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+
+    .dedup-select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    .dedup-apply-btn {
+      background: var(--surface-2);
+      border: 1px solid var(--border-hi);
+      border-radius: 8px;
+      padding: 9px 18px;
+      color: var(--text-dim);
+      font-family: var(--display);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+
+    .dedup-apply-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .dedup-result {
+      display: none;
+      padding: 0 16px 14px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .dedup-result strong { color: var(--accent); font-weight: 500; }
+    .dedup-result .removed { color: var(--error); }
+
     /* ─── Responsive ─────────────────────────────────── */
     @media (max-width: 600px) {
       header { padding: 14px 20px; }
@@ -856,6 +959,21 @@
             </button>
           </div>
         </div>
+        <!-- Dedup -->
+        <div class="dedup-panel">
+          <div class="dedup-header">
+            <span class="dedup-label">Deduplicate by column</span>
+            <span class="dedup-optional">OPTIONAL</span>
+          </div>
+          <div class="dedup-body">
+            <select class="dedup-select" id="dedup-select" aria-label="Column to deduplicate on">
+              <option value="">— choose a column —</option>
+            </select>
+            <button class="dedup-apply-btn" id="dedup-apply-btn">Apply</button>
+          </div>
+          <div class="dedup-result" id="dedup-result"></div>
+        </div>
+
         <div class="reset-row">
           <button id="merge-reset-btn" class="reset-btn">Start over</button>
         </div>
@@ -1056,6 +1174,7 @@
        MERGE
     ══════════════════════════════════════════════════ */
     let mergeFiles = [];    // [{name, rows, headers}]
+    let mergedRows = [];    // full merged output including header row
     let mergedBlob = null;
     let mergedFilename = 'merged.csv';
 
@@ -1073,6 +1192,9 @@
     const mergeResultStats = document.getElementById('merge-result-stats');
     const mergeDownloadBtn = document.getElementById('merge-download-btn');
     const mergeResetBtn    = document.getElementById('merge-reset-btn');
+    const dedupSelect      = document.getElementById('dedup-select');
+    const dedupApplyBtn    = document.getElementById('dedup-apply-btn');
+    const dedupResult      = document.getElementById('dedup-result');
 
     /* upload zone */
     mergeUploadZone.addEventListener('click', () => mergeFileInput.click());
@@ -1250,6 +1372,7 @@
         });
       });
 
+      mergedRows = output;
       const csv = Papa.unparse(output);
       mergedBlob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
 
@@ -1263,6 +1386,17 @@
         '<strong>' + unionHeaders.length + '</strong> columns &nbsp;·&nbsp; ' +
         '<strong>' + mergeFiles.length + '</strong> files merged';
 
+      /* populate dedup column picker */
+      dedupSelect.innerHTML = '<option value="">— choose a column —</option>';
+      unionHeaders.forEach(function (h) {
+        const opt = document.createElement('option');
+        opt.value = h;
+        opt.textContent = h;
+        dedupSelect.appendChild(opt);
+      });
+      dedupResult.style.display = 'none';
+      dedupResult.textContent = '';
+
       mergePanel.style.display = 'none';
       mergeResult.style.display = 'block';
     }
@@ -1271,8 +1405,49 @@
       if (mergedBlob) downloadBlob(null, mergedFilename, mergedBlob);
     });
 
+    dedupApplyBtn.addEventListener('click', function () {
+      const col = dedupSelect.value;
+      if (!col) return;
+
+      const header = mergedRows[0];
+      const colIdx = header.indexOf(col);
+      if (colIdx === -1) return;
+
+      const before = mergedRows.length - 1;
+      const seen = new Set();
+      const deduped = [header];
+      mergedRows.slice(1).forEach(function (row) {
+        const val = row[colIdx];
+        if (!seen.has(val)) {
+          seen.add(val);
+          deduped.push(row);
+        }
+      });
+      const after = deduped.length - 1;
+      const removed = before - after;
+
+      /* update blob + stats */
+      mergedRows = deduped;
+      const csv = Papa.unparse(deduped);
+      mergedBlob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+
+      mergeResultStats.innerHTML =
+        '<strong>' + after.toLocaleString() + '</strong> rows &nbsp;·&nbsp; ' +
+        '<strong>' + (header.length) + '</strong> columns &nbsp;·&nbsp; ' +
+        'deduped on <strong>' + col + '</strong>';
+
+      dedupResult.innerHTML =
+        '<strong>' + removed.toLocaleString() + '</strong> duplicate' + (removed !== 1 ? 's' : '') +
+        ' removed &nbsp;·&nbsp; <strong>' + after.toLocaleString() + '</strong> unique rows remain';
+      dedupResult.style.display = 'block';
+
+      /* reset picker so they can dedupe again on another column */
+      dedupSelect.value = '';
+    });
+
     mergeResetBtn.addEventListener('click', function () {
       mergeFiles = [];
+      mergedRows = [];
       mergedBlob = null;
       mergeFileList.textContent = '';
       mergePanel.style.display = 'none';
