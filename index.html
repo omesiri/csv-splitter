@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CSVsplit — Split CSV files instantly</title>
+  <title>CSVsplit — Split &amp; Merge CSV files</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
   <style>
@@ -39,7 +39,6 @@
       font-size: 15px;
       line-height: 1.6;
       min-height: 100vh;
-      /* Subtle noise grain */
       background-image:
         radial-gradient(ellipse 80% 50% at 50% -10%, rgba(184,255,0,0.04) 0%, transparent 60%),
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
@@ -105,7 +104,7 @@
 
     /* ─── Hero ───────────────────────────────────────── */
     .hero {
-      margin-bottom: 40px;
+      margin-bottom: 32px;
     }
 
     h1 {
@@ -127,11 +126,46 @@
       font-size: 15px;
       color: var(--text-dim);
       font-weight: 300;
-      max-width: 380px;
+      max-width: 420px;
+    }
+
+    /* ─── Mode tabs ──────────────────────────────────── */
+    .mode-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      border-radius: 7px;
+      padding: 9px 0;
+      font-family: var(--display);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #080a0d;
+    }
+
+    .tab-btn:not(.active):hover {
+      color: var(--text);
     }
 
     /* ─── Upload zone ────────────────────────────────── */
-    #upload-zone {
+    .upload-zone {
       border: 1.5px dashed var(--border-hi);
       border-radius: var(--radius);
       padding: 52px 40px;
@@ -144,7 +178,7 @@
       user-select: none;
     }
 
-    #upload-zone::after {
+    .upload-zone::after {
       content: '';
       position: absolute;
       inset: 0;
@@ -154,14 +188,14 @@
       pointer-events: none;
     }
 
-    #upload-zone:hover,
-    #upload-zone.drag-active {
+    .upload-zone:hover,
+    .upload-zone.drag-active {
       border-color: var(--accent);
       background: var(--surface-2);
     }
 
-    #upload-zone:hover::after,
-    #upload-zone.drag-active::after {
+    .upload-zone:hover::after,
+    .upload-zone.drag-active::after {
       opacity: 1;
     }
 
@@ -178,8 +212,8 @@
       transition: background 0.2s, border-color 0.2s;
     }
 
-    #upload-zone:hover .upload-icon-wrap,
-    #upload-zone.drag-active .upload-icon-wrap {
+    .upload-zone:hover .upload-icon-wrap,
+    .upload-zone.drag-active .upload-icon-wrap {
       background: rgba(184,255,0,0.15);
       border-color: rgba(184,255,0,0.4);
     }
@@ -208,9 +242,7 @@
       color: var(--accent);
     }
 
-    #file-input { display: none; }
-
-    /* ─── Config panel ───────────────────────────────── */
+    /* ─── Config panel (split) ───────────────────────── */
     #config-panel {
       display: none;
       background: var(--surface);
@@ -315,7 +347,7 @@
       box-shadow: 0 0 0 3px var(--accent-dim);
     }
 
-    #split-btn {
+    .action-btn {
       background: var(--accent);
       color: #080a0d;
       border: none;
@@ -330,11 +362,11 @@
       white-space: nowrap;
     }
 
-    #split-btn:hover { background: #c8ff1a; }
-    #split-btn:active { transform: scale(0.97); }
+    .action-btn:hover { background: #c8ff1a; }
+    .action-btn:active { transform: scale(0.97); }
 
     /* ─── Error message ──────────────────────────────── */
-    #error-msg {
+    .error-msg {
       display: none;
       margin-top: 10px;
       background: var(--error-bg);
@@ -346,7 +378,7 @@
       color: var(--error);
     }
 
-    /* ─── Results ────────────────────────────────────── */
+    /* ─── Results (split) ────────────────────────────── */
     #results-section { display: none; }
 
     .results-header {
@@ -474,7 +506,7 @@
       text-align: center;
     }
 
-    #reset-btn {
+    .reset-btn {
       background: none;
       border: none;
       color: var(--text-muted);
@@ -488,15 +520,200 @@
       transition: color 0.15s;
     }
 
-    #reset-btn:hover { color: var(--text); }
+    .reset-btn:hover { color: var(--text); }
+
+    /* ─── Merge file list ────────────────────────────── */
+    #merge-panel {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .merge-list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+
+    .merge-list-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .merge-add-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: none;
+      border: 1px solid var(--border-hi);
+      border-radius: 6px;
+      padding: 5px 11px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .merge-add-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    #merge-file-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .merge-file-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .merge-file-item:last-child {
+      border-bottom: none;
+    }
+
+    .merge-file-num {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 7px;
+      flex-shrink: 0;
+      letter-spacing: 0.04em;
+    }
+
+    .merge-file-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .merge-file-name {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .merge-file-meta {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .merge-file-meta strong {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .merge-file-unique {
+      color: var(--text-dim);
+    }
+
+    .remove-file-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      transition: color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .remove-file-btn:hover { color: var(--error); }
+
+    .merge-action-bar {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--surface-2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .merge-summary {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .merge-summary strong {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* ─── Merge result ───────────────────────────────── */
+    #merge-result { display: none; }
+
+    .merge-result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      animation: slideUp 0.22s ease both;
+    }
+
+    .merge-result-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 20px;
+    }
+
+    .merge-result-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .merge-result-label {
+      font-family: var(--display);
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .merge-result-stats {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .merge-result-stats strong {
+      color: var(--accent);
+      font-weight: 500;
+    }
 
     /* ─── Responsive ─────────────────────────────────── */
     @media (max-width: 600px) {
       header { padding: 14px 20px; }
       main { padding: 36px 20px 60px; }
-      #upload-zone { padding: 40px 24px; }
+      .upload-zone { padding: 40px 24px; }
       .config-controls { flex-wrap: wrap; }
       #chunk-input { max-width: 100%; }
+      .merge-action-bar { flex-direction: column; align-items: stretch; }
     }
   </style>
 </head>
@@ -516,79 +733,175 @@
 
   <main>
     <div class="hero">
-      <h1>Split CSV<br>files <span class="hi">instantly.</span></h1>
-      <p class="hero-sub">Upload any CSV, set a row limit, and download your split parts. Nothing leaves your browser.</p>
+      <h1>Split &amp; merge<br>CSV files <span class="hi">instantly.</span></h1>
+      <p class="hero-sub">Upload any CSV, split by row count or merge multiple files by matching headers. Nothing leaves your browser.</p>
     </div>
 
-    <!-- Upload -->
-    <div id="upload-zone" role="button" tabindex="0" aria-label="Upload CSV file">
-      <input type="file" id="file-input" accept=".csv" aria-hidden="true">
-      <div class="upload-icon-wrap">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 15V3M8 7l4-4 4 4"/>
-          <path d="M20 15v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4"/>
-        </svg>
-      </div>
-      <div class="upload-title">Drop your CSV file here</div>
-      <div class="upload-hint">or <em>click to browse</em> &nbsp;·&nbsp; .csv only</div>
+    <!-- Mode tabs -->
+    <div class="mode-tabs" role="tablist">
+      <button class="tab-btn active" id="tab-split" role="tab" aria-selected="true">Split</button>
+      <button class="tab-btn" id="tab-merge" role="tab" aria-selected="false">Merge</button>
     </div>
 
-    <!-- Configure -->
-    <div id="config-panel" aria-live="polite">
-      <div class="file-strip">
-        <span class="csv-badge">CSV</span>
-        <div class="file-details">
-          <div class="file-name-text" id="display-filename">—</div>
-          <div class="file-stat"><strong id="display-rowcount">0</strong> data rows detected</div>
-        </div>
-      </div>
-      <div class="config-body">
-        <div class="config-label-row">
-          <span class="config-label">Rows per part</span>
-        </div>
-        <div class="config-controls">
-          <input
-            type="number"
-            id="chunk-input"
-            placeholder="e.g. 2000"
-            min="1"
-            aria-label="Number of rows per split file"
-          >
-          <button id="split-btn">Split CSV</button>
-        </div>
-        <div id="error-msg" role="alert"></div>
-      </div>
-    </div>
+    <!-- ══════════ SPLIT MODE ══════════ -->
+    <div id="split-mode">
 
-    <!-- Results -->
-    <div id="results-section" aria-live="polite">
-      <div class="results-header">
-        <div class="results-title">Ready to download</div>
-        <div class="results-count"><strong id="display-parts">0</strong> parts</div>
+      <!-- Upload -->
+      <div class="upload-zone" id="upload-zone" role="button" tabindex="0" aria-label="Upload CSV file">
+        <input type="file" id="file-input" accept=".csv" aria-hidden="true">
+        <div class="upload-icon-wrap">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 15V3M8 7l4-4 4 4"/>
+            <path d="M20 15v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4"/>
+          </svg>
+        </div>
+        <div class="upload-title">Drop your CSV file here</div>
+        <div class="upload-hint">or <em>click to browse</em> &nbsp;·&nbsp; .csv only</div>
       </div>
-      <div id="results-list"></div>
-      <div class="reset-row">
-        <button id="reset-btn">Upload another file</button>
+
+      <!-- Configure -->
+      <div id="config-panel" aria-live="polite">
+        <div class="file-strip">
+          <span class="csv-badge">CSV</span>
+          <div class="file-details">
+            <div class="file-name-text" id="display-filename">—</div>
+            <div class="file-stat"><strong id="display-rowcount">0</strong> data rows detected</div>
+          </div>
+        </div>
+        <div class="config-body">
+          <div class="config-label-row">
+            <span class="config-label">Rows per part</span>
+          </div>
+          <div class="config-controls">
+            <input
+              type="number"
+              id="chunk-input"
+              placeholder="e.g. 2000"
+              min="1"
+              aria-label="Number of rows per split file"
+            >
+            <button id="split-btn" class="action-btn">Split CSV</button>
+          </div>
+          <div id="split-error" class="error-msg" role="alert"></div>
+        </div>
       </div>
-    </div>
+
+      <!-- Results -->
+      <div id="results-section" aria-live="polite">
+        <div class="results-header">
+          <div class="results-title">Ready to download</div>
+          <div class="results-count"><strong id="display-parts">0</strong> parts</div>
+        </div>
+        <div id="results-list"></div>
+        <div class="reset-row">
+          <button id="reset-btn" class="reset-btn">Upload another file</button>
+        </div>
+      </div>
+
+    </div><!-- /split-mode -->
+
+    <!-- ══════════ MERGE MODE ══════════ -->
+    <div id="merge-mode" style="display:none">
+
+      <!-- Upload zone -->
+      <div class="upload-zone" id="merge-upload-zone" role="button" tabindex="0" aria-label="Upload CSV files to merge">
+        <input type="file" id="merge-file-input" accept=".csv" multiple aria-hidden="true">
+        <div class="upload-icon-wrap">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 15V3M8 7l4-4 4 4"/>
+            <path d="M20 15v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4"/>
+          </svg>
+        </div>
+        <div class="upload-title">Drop CSV files here</div>
+        <div class="upload-hint">or <em>click to browse</em> &nbsp;·&nbsp; select multiple .csv files</div>
+      </div>
+
+      <!-- File list panel -->
+      <div id="merge-panel" aria-live="polite">
+        <div class="merge-list-header">
+          <span class="merge-list-title">Files to merge</span>
+          <button class="merge-add-btn" id="merge-add-btn">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M5.5 1v9M1 5.5h9"/>
+            </svg>
+            Add more
+          </button>
+          <input type="file" id="merge-add-input" accept=".csv" multiple style="display:none">
+        </div>
+        <div id="merge-file-list"></div>
+        <div class="merge-action-bar">
+          <div class="merge-summary" id="merge-summary">—</div>
+          <button id="merge-btn" class="action-btn">Merge Files</button>
+        </div>
+        <div id="merge-error" class="error-msg" style="margin: 0 20px 16px;" role="alert"></div>
+      </div>
+
+      <!-- Merge result -->
+      <div id="merge-result" aria-live="polite">
+        <div class="results-header">
+          <div class="results-title">Merged file ready</div>
+        </div>
+        <div class="merge-result-card">
+          <div class="merge-result-inner">
+            <div class="merge-result-info">
+              <div class="merge-result-label" id="merge-result-filename">merged.csv</div>
+              <div class="merge-result-stats" id="merge-result-stats">—</div>
+            </div>
+            <button id="merge-download-btn" class="dl-btn">
+              <svg viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5.5 1v7M2.5 5.5l3 3 3-3"/>
+                <path d="M1 9.5h9"/>
+              </svg>
+              Download
+            </button>
+          </div>
+        </div>
+        <div class="reset-row">
+          <button id="merge-reset-btn" class="reset-btn">Start over</button>
+        </div>
+      </div>
+
+    </div><!-- /merge-mode -->
+
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script>
     'use strict';
 
-    /* ─── State ────────────────────────────────────────── */
+    /* ─── Mode tabs ────────────────────────────────────── */
+    const tabSplit = document.getElementById('tab-split');
+    const tabMerge = document.getElementById('tab-merge');
+    const splitMode = document.getElementById('split-mode');
+    const mergeMode = document.getElementById('merge-mode');
+
+    tabSplit.addEventListener('click', function () {
+      tabSplit.classList.add('active');
+      tabMerge.classList.remove('active');
+      splitMode.style.display = 'block';
+      mergeMode.style.display = 'none';
+    });
+
+    tabMerge.addEventListener('click', function () {
+      tabMerge.classList.add('active');
+      tabSplit.classList.remove('active');
+      mergeMode.style.display = 'block';
+      splitMode.style.display = 'none';
+    });
+
+    /* ══════════════════════════════════════════════════
+       SPLIT
+    ══════════════════════════════════════════════════ */
     let allRows = [];
     let originalFilename = '';
     let splitParts = [];
 
-    /* ─── DOM refs ─────────────────────────────────────── */
     const uploadZone     = document.getElementById('upload-zone');
     const fileInput      = document.getElementById('file-input');
     const configPanel    = document.getElementById('config-panel');
     const chunkInput     = document.getElementById('chunk-input');
     const splitBtn       = document.getElementById('split-btn');
-    const errorMsg       = document.getElementById('error-msg');
+    const splitError     = document.getElementById('split-error');
     const resultsSection = document.getElementById('results-section');
     const resultsList    = document.getElementById('results-list');
     const displayFilename = document.getElementById('display-filename');
@@ -596,125 +909,97 @@
     const displayParts   = document.getElementById('display-parts');
     const resetBtn       = document.getElementById('reset-btn');
 
-    /* ─── Upload zone ──────────────────────────────────── */
     uploadZone.addEventListener('click', () => fileInput.click());
-
     uploadZone.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
     });
-
     uploadZone.addEventListener('dragover', e => {
       e.preventDefault();
       uploadZone.classList.add('drag-active');
     });
-
     uploadZone.addEventListener('dragleave', e => {
-      if (!uploadZone.contains(e.relatedTarget)) {
-        uploadZone.classList.remove('drag-active');
-      }
+      if (!uploadZone.contains(e.relatedTarget)) uploadZone.classList.remove('drag-active');
     });
-
     uploadZone.addEventListener('drop', e => {
       e.preventDefault();
       uploadZone.classList.remove('drag-active');
-      handleFile(e.dataTransfer.files[0]);
+      handleSplitFile(e.dataTransfer.files[0]);
     });
-
     fileInput.addEventListener('change', e => {
-      handleFile(e.target.files[0]);
+      handleSplitFile(e.target.files[0]);
       fileInput.value = '';
     });
 
-    /* ─── Parse ────────────────────────────────────────── */
-    function handleFile(file) {
+    function handleSplitFile(file) {
       if (!file) return;
-
       if (!file.name.toLowerCase().endsWith('.csv')) {
-        showError('Please upload a .csv file.');
+        showSplitError('Please upload a .csv file.');
         return;
       }
-
       Papa.parse(file, {
         header: false,
         skipEmptyLines: true,
         complete: function (result) {
           const data = result.data;
-
           if (data.length < 2) {
-            showError('This file has no data rows (or only a header row).');
+            showSplitError('This file has no data rows (or only a header row).');
             return;
           }
-
           allRows = data;
           originalFilename = file.name.replace(/\.csv$/i, '');
-          showConfig(data.length - 1);
+          showSplitConfig(data.length - 1);
         },
         error: function () {
-          showError('Could not read this file. Please check it is a valid CSV.');
+          showSplitError('Could not read this file. Please check it is a valid CSV.');
         }
       });
     }
 
-    function showConfig(rowCount) {
+    function showSplitConfig(rowCount) {
       uploadZone.style.display = 'none';
       resultsSection.style.display = 'none';
       resultsList.textContent = '';
       splitParts = [];
-      clearError();
-
+      clearSplitError();
       displayFilename.textContent = originalFilename + '.csv';
       displayRowcount.textContent = rowCount.toLocaleString();
-
       configPanel.style.display = 'block';
       chunkInput.value = '';
       chunkInput.focus();
     }
 
-    /* ─── Split ────────────────────────────────────────── */
     splitBtn.addEventListener('click', runSplit);
-
-    chunkInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') runSplit();
-    });
+    chunkInput.addEventListener('keydown', e => { if (e.key === 'Enter') runSplit(); });
 
     function runSplit() {
       const raw = chunkInput.value.trim();
       const chunkSize = parseInt(raw, 10);
-
       if (!raw || isNaN(chunkSize) || chunkSize < 1) {
-        showError('Enter a whole number greater than 0.');
+        showSplitError('Enter a whole number greater than 0.');
         return;
       }
-
-      clearError();
-
+      clearSplitError();
       const header   = allRows[0];
       const dataRows = allRows.slice(1);
       splitParts = [];
-
       for (let i = 0; i < dataRows.length; i += chunkSize) {
         splitParts.push([header].concat(dataRows.slice(i, i + chunkSize)));
       }
-
-      renderResults();
+      renderSplitResults();
     }
 
-    /* ─── Render results ───────────────────────────────── */
-    function renderResults() {
+    function renderSplitResults() {
       resultsList.textContent = '';
       displayParts.textContent = splitParts.length.toLocaleString();
-
       splitParts.forEach(function (rows, i) {
-        const partNum     = i + 1;
+        const partNum      = i + 1;
         const dataRowCount = rows.length - 1;
-        const delay       = Math.min(i * 35, 400);
+        const delay        = Math.min(i * 35, 400);
 
-        /* wrapper */
         const item = document.createElement('div');
         item.className = 'result-item';
         item.style.animationDelay = delay + 'ms';
 
-        /* left side */
         const left = document.createElement('div');
         left.className = 'result-left';
 
@@ -724,97 +1009,328 @@
 
         const info = document.createElement('span');
         info.className = 'part-info';
-
         const strong = document.createElement('strong');
         strong.textContent = dataRowCount.toLocaleString();
-
         info.appendChild(strong);
         info.append(' rows  ·  ' + originalFilename + '_part_' + partNum + '.csv');
 
         left.appendChild(tag);
         left.appendChild(info);
 
-        /* download button */
-        const btn = document.createElement('button');
-        btn.className = 'dl-btn';
-        btn.setAttribute('aria-label', 'Download part ' + partNum);
-
-        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        icon.setAttribute('viewBox', '0 0 11 11');
-        icon.setAttribute('fill', 'none');
-        icon.setAttribute('stroke', 'currentColor');
-        icon.setAttribute('stroke-width', '1.6');
-        icon.setAttribute('stroke-linecap', 'round');
-        icon.setAttribute('stroke-linejoin', 'round');
-        icon.setAttribute('aria-hidden', 'true');
-
-        const p1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        p1.setAttribute('d', 'M5.5 1v7M2.5 5.5l3 3 3-3');
-
-        const p2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        p2.setAttribute('d', 'M1 9.5h9');
-
-        icon.appendChild(p1);
-        icon.appendChild(p2);
-
-        const btnText = document.createTextNode(' Download');
-        btn.appendChild(icon);
-        btn.appendChild(btnText);
-
-        btn.addEventListener('click', (function (capturedRows, capturedNum) {
-          return function () { downloadPart(capturedRows, capturedNum); };
+        const btn = makeDlBtn('Download part ' + partNum);
+        btn.addEventListener('click', (function (r, n) {
+          return function () { downloadBlob(Papa.unparse(r), originalFilename + '_part_' + n + '.csv'); };
         })(rows, partNum));
 
         item.appendChild(left);
         item.appendChild(btn);
         resultsList.appendChild(item);
       });
-
       resultsSection.style.display = 'block';
     }
 
-    /* ─── Download ─────────────────────────────────────── */
-    function downloadPart(rows, partNum) {
-      const csv  = Papa.unparse(rows);
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href     = url;
-      a.download = originalFilename + '_part_' + partNum + '.csv';
+    let splitErrorTimer = null;
+    function showSplitError(msg) {
+      clearTimeout(splitErrorTimer);
+      splitError.textContent = msg;
+      splitError.style.display = 'block';
+      splitErrorTimer = setTimeout(clearSplitError, 5000);
+    }
+    function clearSplitError() {
+      clearTimeout(splitErrorTimer);
+      splitError.style.display = 'none';
+      splitError.textContent = '';
+    }
+
+    resetBtn.addEventListener('click', function () {
+      allRows = []; originalFilename = ''; splitParts = [];
+      configPanel.style.display = 'none';
+      resultsSection.style.display = 'none';
+      resultsList.textContent = '';
+      chunkInput.value = '';
+      clearSplitError();
+      uploadZone.style.display = 'block';
+    });
+
+    /* ══════════════════════════════════════════════════
+       MERGE
+    ══════════════════════════════════════════════════ */
+    let mergeFiles = [];    // [{name, rows, headers}]
+    let mergedBlob = null;
+    let mergedFilename = 'merged.csv';
+
+    const mergeUploadZone  = document.getElementById('merge-upload-zone');
+    const mergeFileInput   = document.getElementById('merge-file-input');
+    const mergePanel       = document.getElementById('merge-panel');
+    const mergeFileList    = document.getElementById('merge-file-list');
+    const mergeAddBtn      = document.getElementById('merge-add-btn');
+    const mergeAddInput    = document.getElementById('merge-add-input');
+    const mergeSummary     = document.getElementById('merge-summary');
+    const mergeBtn         = document.getElementById('merge-btn');
+    const mergeError       = document.getElementById('merge-error');
+    const mergeResult      = document.getElementById('merge-result');
+    const mergeResultFilename = document.getElementById('merge-result-filename');
+    const mergeResultStats = document.getElementById('merge-result-stats');
+    const mergeDownloadBtn = document.getElementById('merge-download-btn');
+    const mergeResetBtn    = document.getElementById('merge-reset-btn');
+
+    /* upload zone */
+    mergeUploadZone.addEventListener('click', () => mergeFileInput.click());
+    mergeUploadZone.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); mergeFileInput.click(); }
+    });
+    mergeUploadZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      mergeUploadZone.classList.add('drag-active');
+    });
+    mergeUploadZone.addEventListener('dragleave', e => {
+      if (!mergeUploadZone.contains(e.relatedTarget)) mergeUploadZone.classList.remove('drag-active');
+    });
+    mergeUploadZone.addEventListener('drop', e => {
+      e.preventDefault();
+      mergeUploadZone.classList.remove('drag-active');
+      handleMergeFiles(Array.from(e.dataTransfer.files));
+    });
+    mergeFileInput.addEventListener('change', e => {
+      handleMergeFiles(Array.from(e.target.files));
+      mergeFileInput.value = '';
+    });
+
+    /* add more button */
+    mergeAddBtn.addEventListener('click', () => mergeAddInput.click());
+    mergeAddInput.addEventListener('change', e => {
+      handleMergeFiles(Array.from(e.target.files));
+      mergeAddInput.value = '';
+    });
+
+    function handleMergeFiles(files) {
+      const csvFiles = files.filter(f => f.name.toLowerCase().endsWith('.csv'));
+      if (!csvFiles.length) {
+        showMergeError('Please select .csv files only.');
+        return;
+      }
+
+      let parsed = 0;
+      csvFiles.forEach(function (file) {
+        Papa.parse(file, {
+          header: false,
+          skipEmptyLines: true,
+          complete: function (result) {
+            const data = result.data;
+            if (data.length >= 1) {
+              mergeFiles.push({
+                name: file.name,
+                rows: data,
+                headers: data[0]
+              });
+            }
+            parsed++;
+            if (parsed === csvFiles.length) {
+              renderMergePanel();
+            }
+          },
+          error: function () {
+            parsed++;
+            showMergeError('Could not read "' + file.name + '". Skipping.');
+            if (parsed === csvFiles.length) renderMergePanel();
+          }
+        });
+      });
+    }
+
+    function renderMergePanel() {
+      if (!mergeFiles.length) return;
+
+      mergeUploadZone.style.display = 'none';
+      mergeResult.style.display = 'none';
+      clearMergeError();
+
+      /* compute union of all headers (order: first appearance) */
+      const unionHeaders = buildUnionHeaders();
+
+      mergeFileList.textContent = '';
+      mergeFiles.forEach(function (file, idx) {
+        const uniqueCount = file.headers.filter(h => !mergeFiles.some(function (f, fi) {
+          return fi !== idx && f.headers.indexOf(h) !== -1;
+        })).length;
+
+        const item = document.createElement('div');
+        item.className = 'merge-file-item';
+
+        const num = document.createElement('span');
+        num.className = 'merge-file-num';
+        num.textContent = String(idx + 1).padStart(2, '0');
+
+        const details = document.createElement('div');
+        details.className = 'merge-file-details';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'merge-file-name';
+        nameEl.textContent = file.name;
+
+        const meta = document.createElement('div');
+        meta.className = 'merge-file-meta';
+        const dataRows = file.rows.length - 1;
+        const colCount = file.headers.length;
+        meta.innerHTML =
+          '<strong>' + dataRows.toLocaleString() + '</strong> rows &nbsp;·&nbsp; ' +
+          '<strong>' + colCount + '</strong> columns' +
+          (uniqueCount > 0 ? ' &nbsp;·&nbsp; <span class="merge-file-unique">' + uniqueCount + ' unique header' + (uniqueCount > 1 ? 's' : '') + '</span>' : '');
+
+        details.appendChild(nameEl);
+        details.appendChild(meta);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-file-btn';
+        removeBtn.setAttribute('aria-label', 'Remove ' + file.name);
+        removeBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 2l9 9M11 2l-9 9"/></svg>';
+        removeBtn.addEventListener('click', (function (i) {
+          return function () {
+            mergeFiles.splice(i, 1);
+            if (mergeFiles.length === 0) {
+              mergePanel.style.display = 'none';
+              mergeUploadZone.style.display = 'block';
+            } else {
+              renderMergePanel();
+            }
+          };
+        })(idx));
+
+        item.appendChild(num);
+        item.appendChild(details);
+        item.appendChild(removeBtn);
+        mergeFileList.appendChild(item);
+      });
+
+      /* summary */
+      const totalDataRows = mergeFiles.reduce((s, f) => s + f.rows.length - 1, 0);
+      mergeSummary.innerHTML =
+        '<strong>' + mergeFiles.length + '</strong> files &nbsp;·&nbsp; ' +
+        '<strong>' + totalDataRows.toLocaleString() + '</strong> total rows &nbsp;·&nbsp; ' +
+        '<strong>' + unionHeaders.length + '</strong> columns';
+
+      mergePanel.style.display = 'block';
+    }
+
+    function buildUnionHeaders() {
+      const seen = new Set();
+      const union = [];
+      mergeFiles.forEach(function (file) {
+        file.headers.forEach(function (h) {
+          if (!seen.has(h)) { seen.add(h); union.push(h); }
+        });
+      });
+      return union;
+    }
+
+    mergeBtn.addEventListener('click', runMerge);
+
+    function runMerge() {
+      if (mergeFiles.length < 2) {
+        showMergeError('Add at least 2 CSV files to merge.');
+        return;
+      }
+      clearMergeError();
+
+      const unionHeaders = buildUnionHeaders();
+
+      /* build merged rows: union header row + all data rows mapped to union columns */
+      const output = [unionHeaders];
+      mergeFiles.forEach(function (file) {
+        const fileHeaderIndex = {};
+        file.headers.forEach(function (h, i) { fileHeaderIndex[h] = i; });
+
+        const dataRows = file.rows.slice(1);
+        dataRows.forEach(function (row) {
+          const mapped = unionHeaders.map(function (h) {
+            const col = fileHeaderIndex[h];
+            return col !== undefined ? (row[col] !== undefined ? row[col] : '') : '';
+          });
+          output.push(mapped);
+        });
+      });
+
+      const csv = Papa.unparse(output);
+      mergedBlob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+
+      /* derive a merged filename from the first file */
+      mergedFilename = mergeFiles[0].name.replace(/\.csv$/i, '') + '_merged.csv';
+
+      const totalRows = output.length - 1;
+      mergeResultFilename.textContent = mergedFilename;
+      mergeResultStats.innerHTML =
+        '<strong>' + totalRows.toLocaleString() + '</strong> rows &nbsp;·&nbsp; ' +
+        '<strong>' + unionHeaders.length + '</strong> columns &nbsp;·&nbsp; ' +
+        '<strong>' + mergeFiles.length + '</strong> files merged';
+
+      mergePanel.style.display = 'none';
+      mergeResult.style.display = 'block';
+    }
+
+    mergeDownloadBtn.addEventListener('click', function () {
+      if (mergedBlob) downloadBlob(null, mergedFilename, mergedBlob);
+    });
+
+    mergeResetBtn.addEventListener('click', function () {
+      mergeFiles = [];
+      mergedBlob = null;
+      mergeFileList.textContent = '';
+      mergePanel.style.display = 'none';
+      mergeResult.style.display = 'none';
+      clearMergeError();
+      mergeUploadZone.style.display = 'block';
+    });
+
+    let mergeErrorTimer = null;
+    function showMergeError(msg) {
+      clearTimeout(mergeErrorTimer);
+      mergeError.textContent = msg;
+      mergeError.style.display = 'block';
+      mergeErrorTimer = setTimeout(clearMergeError, 5000);
+    }
+    function clearMergeError() {
+      clearTimeout(mergeErrorTimer);
+      mergeError.style.display = 'none';
+      mergeError.textContent = '';
+    }
+
+    /* ══════════════════════════════════════════════════
+       SHARED UTILS
+    ══════════════════════════════════════════════════ */
+    function downloadBlob(csv, filename, blob) {
+      const b = blob || new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(b);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       setTimeout(function () { URL.revokeObjectURL(url); }, 100);
     }
 
-    /* ─── Error ────────────────────────────────────────── */
-    let errorTimer = null;
-
-    function showError(msg) {
-      clearTimeout(errorTimer);
-      errorMsg.textContent = msg;
-      errorMsg.style.display = 'block';
-      errorTimer = setTimeout(clearError, 5000);
+    function makeDlBtn(label) {
+      const btn = document.createElement('button');
+      btn.className = 'dl-btn';
+      btn.setAttribute('aria-label', label);
+      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      icon.setAttribute('viewBox', '0 0 11 11');
+      icon.setAttribute('fill', 'none');
+      icon.setAttribute('stroke', 'currentColor');
+      icon.setAttribute('stroke-width', '1.6');
+      icon.setAttribute('stroke-linecap', 'round');
+      icon.setAttribute('stroke-linejoin', 'round');
+      icon.setAttribute('aria-hidden', 'true');
+      const p1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      p1.setAttribute('d', 'M5.5 1v7M2.5 5.5l3 3 3-3');
+      const p2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      p2.setAttribute('d', 'M1 9.5h9');
+      icon.appendChild(p1);
+      icon.appendChild(p2);
+      btn.appendChild(icon);
+      btn.appendChild(document.createTextNode(' Download'));
+      return btn;
     }
-
-    function clearError() {
-      clearTimeout(errorTimer);
-      errorMsg.style.display = 'none';
-      errorMsg.textContent = '';
-    }
-
-    /* ─── Reset ────────────────────────────────────────── */
-    resetBtn.addEventListener('click', function () {
-      allRows = [];
-      originalFilename = '';
-      splitParts = [];
-      configPanel.style.display = 'none';
-      resultsSection.style.display = 'none';
-      resultsList.textContent = '';
-      chunkInput.value = '';
-      clearError();
-      uploadZone.style.display = 'block';
-    });
   </script>
 </body>
 </html>
