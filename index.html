@@ -1241,7 +1241,6 @@
     const mergeBtn         = document.getElementById('merge-btn');
     const mergeError       = document.getElementById('merge-error');
     const mergeResult      = document.getElementById('merge-result');
-    const mergeResultFilename = document.getElementById('merge-result-filename');
     const mergeResultStats = document.getElementById('merge-result-stats');
     const mergeDownloadBtn   = document.getElementById('merge-download-btn');
     const mergeResetBtn      = document.getElementById('merge-reset-btn');
@@ -1434,7 +1433,6 @@
       mergedFilename = mergeFiles[0].name.replace(/\.csv$/i, '') + '_merged.csv';
 
       const totalRows = output.length - 1;
-      mergeResultFilename.textContent = mergedFilename;
       mergeResultStats.innerHTML =
         '<strong>' + totalRows.toLocaleString() + '</strong> rows &nbsp;·&nbsp; ' +
         '<strong>' + unionHeaders.length + '</strong> columns &nbsp;·&nbsp; ' +
